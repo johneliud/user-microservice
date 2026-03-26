@@ -67,4 +67,20 @@ public class TwoFactorAuthService {
         userRepository.save(user);
         log.info("2FA enabled for userId: {}", userId);
     }
+
+    @Transactional
+    public void disable(UUID userId, String password) {
+        log.info("POST /api/auth/2fa/disable - Disabling 2FA for userId: {}", userId);
+        User user = findById(userId);
+
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            log.warn("2FA disable failed - incorrect password for userId: {}", userId);
+            throw new IllegalArgumentException("Invalid password");
+        }
+
+        user.setTwoFactorEnabled(false);
+        user.setTotpSecret(null);
+        userRepository.save(user);
+        log.info("2FA disabled for userId: {}", userId);
+    }
 }
