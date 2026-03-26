@@ -5,7 +5,7 @@ public record AuthResponse(
         String refreshToken,
         String tokenType,
         long expiresIn
-) {
+) implements LoginResponse {
     public static AuthResponse of(String accessToken, String refreshToken, long expiresIn) {
         return new AuthResponse(accessToken, refreshToken, "Bearer", expiresIn);
     }
