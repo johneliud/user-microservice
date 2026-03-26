@@ -117,4 +117,19 @@ public class AuthService {
 
         return AuthResponse.of(accessToken, newRefreshToken, jwtUtil.getExpiration());
     }
+
+    @Transactional
+    public void logout(RefreshTokenRequest request) {
+        log.debug("Processing logout - revoking refresh token");
+
+        refreshTokenRepository.findByToken(request.refreshToken())
+                .ifPresentOrElse(
+                        rt -> {
+                            rt.setRevoked(true);
+                            refreshTokenRepository.save(rt);
+                            log.info("Refresh token revoked for userId: {}", rt.getUserId());
+                        },
+                        () -> log.warn("Logout requested with unrecognised refresh token")
+                );
+    }
 }
