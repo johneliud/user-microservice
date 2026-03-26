@@ -132,4 +132,16 @@ public class AuthService {
                         () -> log.warn("Logout requested with unrecognised refresh token")
                 );
     }
+
+    private String createRefreshToken(UUID userId) {
+        RefreshToken refreshToken = RefreshToken.builder()
+                .token(UUID.randomUUID().toString())
+                .userId(userId)
+                .expiresAt(LocalDateTime.now().plusSeconds(refreshExpiration / 1000))
+                .build();
+
+        String token = refreshTokenRepository.save(refreshToken).getToken();
+        log.debug("Refresh token created for userId: {}", userId);
+        return token;
+    }
 }
