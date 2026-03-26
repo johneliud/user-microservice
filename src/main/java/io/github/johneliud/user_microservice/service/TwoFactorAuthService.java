@@ -1,0 +1,127 @@
+package io.github.johneliud.user_microservice.service;
+
+import io.github.johneliud.user_microservice.dto.AuthResponse;
+import io.github.johneliud.user_microservice.dto.TwoFactorAuthRequest;
+import io.github.johneliud.user_microservice.dto.TwoFactorSetupResponse;
+import io.github.johneliud.user_microservice.entity.RefreshToken;
+import io.github.johneliud.user_microservice.entity.User;
+import io.github.johneliud.user_microservice.repository.RefreshTokenRepository;
+import io.github.johneliud.user_microservice.repository.UserRepository;
+import io.github.johneliud.user_microservice.util.JwtUtil;
+import io.github.johneliud.user_microservice.util.TotpUtil;
+import io.jsonwebtoken.Claims;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class TwoFactorAuthService {
+
+    private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final JwtUtil jwtUtil;
+    private final TotpUtil totpUtil;
+    private final PasswordEncoder passwordEncoder;
+
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpiration;
+
+    @Transactional
+    public TwoFactorSetupResponse setup(UUID userId) {
+        log.info("POST /api/auth/2fa/setup - Setting up 2FA for userId: {}", userId);
+        User user = findById(userId);
+
+        String secret = totpUtil.generateSecret();
+        String qrCodeUri = totpUtil.generateQrCodeUri(secret, user.getEmail());
+
+        user.setTotpSecret(secret);
+        userRepository.save(user);
+
+        log.info("2FA secret generated for userId: {}", userId);
+        return new TwoFactorSetupResponse(secret, qrCodeUri);
+    }
+
+    @Transactional
+    public void verifyAndEnable(UUID userId, String totpCode) {
+        log.info("POST /api/auth/2fa/verify - Verifying 2FA setup for userId: {}", userId);
+        User user = findById(userId);
+
+        if (user.getTotpSecret() == null) {
+            log.warn("2FA verify failed - no secret set for userId: {}", userId);
+            throw new IllegalStateException("2FA setup has not been initiated");
+        }
+        if (!totpUtil.verifyCode(user.getTotpSecret(), totpCode)) {
+            log.warn("2FA verify failed - invalid code for userId: {}", userId);
+            throw new IllegalArgumentException("Invalid TOTP code");
+        }
+
+        user.setTwoFactorEnabled(true);
+        userRepository.save(user);
+        log.info("2FA enabled for userId: {}", userId);
+    }
+
+    @Transactional
+    public void disable(UUID userId, String password) {
+        log.info("POST /api/auth/2fa/disable - Disabling 2FA for userId: {}", userId);
+        User user = findById(userId);
+
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            log.warn("2FA disable failed - incorrect password for userId: {}", userId);
+            throw new IllegalArgumentException("Invalid password");
+        }
+
+        user.setTwoFactorEnabled(false);
+        user.setTotpSecret(null);
+        userRepository.save(user);
+        log.info("2FA disabled for userId: {}", userId);
+    }
+
+    @Transactional
+    public AuthResponse authenticate(TwoFactorAuthRequest request) {
+        log.info("POST /api/auth/2fa/authenticate - MFA authentication attempt");
+
+        Claims claims = jwtUtil.validateMfaToken(request.mfaToken());
+        UUID userId = UUID.fromString(jwtUtil.getUserId(claims));
+        User user = findById(userId);
+
+        if (!user.isTwoFactorEnabled() || user.getTotpSecret() == null) {
+            log.warn("2FA authenticate failed - 2FA not enabled for userId: {}", userId);
+            throw new IllegalStateException("2FA is not enabled for this account");
+        }
+        if (!totpUtil.verifyCode(user.getTotpSecret(), request.totpCode())) {
+            log.warn("2FA authenticate failed - invalid TOTP code for userId: {}", userId);
+            throw new IllegalArgumentException("Invalid TOTP code");
+        }
+
+        String accessToken = jwtUtil.generateToken(user);
+        String refreshToken = createRefreshToken(userId);
+
+        log.info("2FA authentication successful for userId: {}", userId);
+        return AuthResponse.of(accessToken, refreshToken, jwtUtil.getExpiration());
+    }
+
+    private String createRefreshToken(UUID userId) {
+        RefreshToken refreshToken = RefreshToken.builder()
+                .token(UUID.randomUUID().toString())
+                .userId(userId)
+                .expiresAt(LocalDateTime.now().plusSeconds(refreshExpiration / 1000))
+                .build();
+        return refreshTokenRepository.save(refreshToken).getToken();
+    }
+
+    private User findById(UUID userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    log.warn("User not found - userId: {}", userId);
+                    return new IllegalArgumentException("User not found");
+                });
+    }
+}

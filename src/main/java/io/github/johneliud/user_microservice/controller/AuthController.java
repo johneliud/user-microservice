@@ -2,6 +2,7 @@ package io.github.johneliud.user_microservice.controller;
 
 import io.github.johneliud.user_microservice.dto.AuthResponse;
 import io.github.johneliud.user_microservice.dto.LoginRequest;
+import io.github.johneliud.user_microservice.dto.LoginResponse;
 import io.github.johneliud.user_microservice.dto.RefreshTokenRequest;
 import io.github.johneliud.user_microservice.dto.RegisterRequest;
 import io.github.johneliud.user_microservice.service.AuthService;
@@ -29,9 +30,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         log.info("POST /api/auth/login - Login request received for username: {}", request.username());
-        AuthResponse response = authService.login(request);
+        LoginResponse response = authService.login(request);
         log.info("POST /api/auth/login - Login successful for username: {}", request.username());
         return ResponseEntity.ok(response);
     }
