@@ -35,4 +35,12 @@ public class AuthController {
         log.info("POST /api/auth/login - Login successful for username: {}", request.username());
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        log.info("POST /api/auth/refresh - Token refresh request received");
+        AuthResponse response = authService.refresh(request);
+        log.info("POST /api/auth/refresh - Token refreshed successfully");
+        return ResponseEntity.ok(response);
+    }
 }
