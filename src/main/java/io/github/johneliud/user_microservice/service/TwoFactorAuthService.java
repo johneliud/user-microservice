@@ -83,4 +83,28 @@ public class TwoFactorAuthService {
         userRepository.save(user);
         log.info("2FA disabled for userId: {}", userId);
     }
+
+    @Transactional
+    public AuthResponse authenticate(TwoFactorAuthRequest request) {
+        log.info("POST /api/auth/2fa/authenticate - MFA authentication attempt");
+
+        Claims claims = jwtUtil.validateMfaToken(request.mfaToken());
+        UUID userId = UUID.fromString(jwtUtil.getUserId(claims));
+        User user = findById(userId);
+
+        if (!user.isTwoFactorEnabled() || user.getTotpSecret() == null) {
+            log.warn("2FA authenticate failed - 2FA not enabled for userId: {}", userId);
+            throw new IllegalStateException("2FA is not enabled for this account");
+        }
+        if (!totpUtil.verifyCode(user.getTotpSecret(), request.totpCode())) {
+            log.warn("2FA authenticate failed - invalid TOTP code for userId: {}", userId);
+            throw new IllegalArgumentException("Invalid TOTP code");
+        }
+
+        String accessToken = jwtUtil.generateToken(user);
+        String refreshToken = createRefreshToken(userId);
+
+        log.info("2FA authentication successful for userId: {}", userId);
+        return AuthResponse.of(accessToken, refreshToken, jwtUtil.getExpiration());
+    }
 }
