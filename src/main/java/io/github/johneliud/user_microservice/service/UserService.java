@@ -73,4 +73,22 @@ public class UserService {
         userRepository.delete(user);
         log.info("User deleted by admin - userId: {}", userId);
     }
+
+    private User findById(UUID userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    log.warn("User not found - userId: {}", userId);
+                    return new IllegalArgumentException("User not found");
+                });
+    }
+
+    private UserProfileResponse toProfileResponse(User user) {
+        return new UserProfileResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.isTwoFactorEnabled(),
+                user.getCreatedAt()
+        );
+    }
 }
