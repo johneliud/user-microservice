@@ -1,6 +1,7 @@
 package io.github.johneliud.user_microservice.util;
 
 import io.github.johneliud.user_microservice.entity.User;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,6 +37,22 @@ public class JwtUtil {
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey())
                 .compact();
+    }
+
+    public Claims validateToken(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
+    public String getUserId(Claims claims) {
+        return claims.getSubject();
+    }
+
+    public String getRole(Claims claims) {
+        return claims.get("role", String.class);
     }
 
     public long getExpiration() {
