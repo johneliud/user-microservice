@@ -44,4 +44,19 @@ public class UserController {
         userService.deleteAccount(userId);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<List<UserProfileResponse>> getAllUsers() {
+        log.info("GET /api/users - Admin fetching all users");
+        return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
+        log.info("DELETE /api/users/{} - Admin deleting user", id);
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
 }
