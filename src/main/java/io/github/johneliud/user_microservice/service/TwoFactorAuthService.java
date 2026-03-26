@@ -107,4 +107,21 @@ public class TwoFactorAuthService {
         log.info("2FA authentication successful for userId: {}", userId);
         return AuthResponse.of(accessToken, refreshToken, jwtUtil.getExpiration());
     }
+
+    private String createRefreshToken(UUID userId) {
+        RefreshToken refreshToken = RefreshToken.builder()
+                .token(UUID.randomUUID().toString())
+                .userId(userId)
+                .expiresAt(LocalDateTime.now().plusSeconds(refreshExpiration / 1000))
+                .build();
+        return refreshTokenRepository.save(refreshToken).getToken();
+    }
+
+    private User findById(UUID userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    log.warn("User not found - userId: {}", userId);
+                    return new IllegalArgumentException("User not found");
+                });
+    }
 }
