@@ -84,4 +84,37 @@ public class AuthService {
 
         return AuthResponse.of(accessToken, refreshToken, jwtUtil.getExpiration());
     }
+
+    @Transactional
+    public AuthResponse refresh(RefreshTokenRequest request) {
+        log.debug("Processing refresh token rotation");
+
+        RefreshToken stored = refreshTokenRepository.findByToken(request.refreshToken())
+                .orElseThrow(() -> {
+                    log.warn("Refresh failed - token not found");
+                    return new IllegalArgumentException("Invalid refresh token");
+                });
+
+        if (stored.isRevoked()) {
+            log.warn("Refresh failed - token already revoked for userId: {}", stored.getUserId());
+            throw new IllegalArgumentException("Refresh token has been revoked");
+        }
+        if (stored.getExpiresAt().isBefore(LocalDateTime.now())) {
+            log.warn("Refresh failed - token expired for userId: {}", stored.getUserId());
+            throw new IllegalArgumentException("Refresh token has expired");
+        }
+
+        stored.setRevoked(true);
+        refreshTokenRepository.save(stored);
+
+        User user = userRepository.findById(stored.getUserId())
+                .orElseThrow();
+
+        log.info("Refresh token rotated for userId: {}", user.getId());
+
+        String accessToken = jwtUtil.generateToken(user);
+        String newRefreshToken = createRefreshToken(user.getId());
+
+        return AuthResponse.of(accessToken, newRefreshToken, jwtUtil.getExpiration());
+    }
 }
