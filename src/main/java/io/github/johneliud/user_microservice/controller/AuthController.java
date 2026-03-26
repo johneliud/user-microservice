@@ -27,4 +27,12 @@ public class AuthController {
         log.info("POST /api/auth/register - Registration successful for email: {}", request.email());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        log.info("POST /api/auth/login - Login request received for username: {}", request.username());
+        AuthResponse response = authService.login(request);
+        log.info("POST /api/auth/login - Login successful for username: {}", request.username());
+        return ResponseEntity.ok(response);
+    }
 }
