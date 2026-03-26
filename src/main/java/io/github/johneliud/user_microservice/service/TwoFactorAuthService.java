@@ -48,4 +48,23 @@ public class TwoFactorAuthService {
         log.info("2FA secret generated for userId: {}", userId);
         return new TwoFactorSetupResponse(secret, qrCodeUri);
     }
+
+    @Transactional
+    public void verifyAndEnable(UUID userId, String totpCode) {
+        log.info("POST /api/auth/2fa/verify - Verifying 2FA setup for userId: {}", userId);
+        User user = findById(userId);
+
+        if (user.getTotpSecret() == null) {
+            log.warn("2FA verify failed - no secret set for userId: {}", userId);
+            throw new IllegalStateException("2FA setup has not been initiated");
+        }
+        if (!totpUtil.verifyCode(user.getTotpSecret(), totpCode)) {
+            log.warn("2FA verify failed - invalid code for userId: {}", userId);
+            throw new IllegalArgumentException("Invalid TOTP code");
+        }
+
+        user.setTwoFactorEnabled(true);
+        userRepository.save(user);
+        log.info("2FA enabled for userId: {}", userId);
+    }
 }
