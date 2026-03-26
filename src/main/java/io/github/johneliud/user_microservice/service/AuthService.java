@@ -65,4 +65,23 @@ public class AuthService {
 
         return AuthResponse.of(accessToken, refreshToken, jwtUtil.getExpiration());
     }
+
+    @Transactional
+    public AuthResponse login(LoginRequest request) {
+        log.debug("Authenticating user: {}", request.username());
+
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.username(), request.password())
+        );
+
+        User user = userRepository.findByUsername(request.username())
+                .orElseThrow();
+
+        log.info("User authenticated - id: {}, username: {}", user.getId(), user.getUsername());
+
+        String accessToken = jwtUtil.generateToken(user);
+        String refreshToken = createRefreshToken(user.getId());
+
+        return AuthResponse.of(accessToken, refreshToken, jwtUtil.getExpiration());
+    }
 }
