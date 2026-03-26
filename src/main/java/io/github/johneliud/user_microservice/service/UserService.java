@@ -50,4 +50,27 @@ public class UserService {
 
         return toProfileResponse(userRepository.save(user));
     }
+
+    @Transactional
+    public void deleteAccount(UUID userId) {
+        log.debug("Deleting account for userId: {}", userId);
+        User user = findById(userId);
+        userRepository.delete(user);
+        log.info("Account deleted for userId: {}", userId);
+    }
+
+    public List<UserProfileResponse> getAllUsers() {
+        log.debug("Admin fetching all users");
+        return userRepository.findAll().stream()
+                .map(this::toProfileResponse)
+                .toList();
+    }
+
+    @Transactional
+    public void deleteUser(UUID userId) {
+        log.debug("Admin deleting userId: {}", userId);
+        User user = findById(userId);
+        userRepository.delete(user);
+        log.info("User deleted by admin - userId: {}", userId);
+    }
 }
