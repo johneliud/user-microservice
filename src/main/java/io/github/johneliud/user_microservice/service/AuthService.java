@@ -2,6 +2,8 @@ package io.github.johneliud.user_microservice.service;
 
 import io.github.johneliud.user_microservice.dto.AuthResponse;
 import io.github.johneliud.user_microservice.dto.LoginRequest;
+import io.github.johneliud.user_microservice.dto.LoginResponse;
+import io.github.johneliud.user_microservice.dto.MfaRequiredResponse;
 import io.github.johneliud.user_microservice.dto.RefreshTokenRequest;
 import io.github.johneliud.user_microservice.dto.RegisterRequest;
 import io.github.johneliud.user_microservice.entity.RefreshToken;
@@ -67,7 +69,7 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request) {
         log.debug("Authenticating user: {}", request.username());
 
         authenticationManager.authenticate(
@@ -78,6 +80,12 @@ public class AuthService {
                 .orElseThrow();
 
         log.info("User authenticated - id: {}, username: {}", user.getId(), user.getUsername());
+
+        if (user.isTwoFactorEnabled()) {
+            String mfaToken = jwtUtil.generateMfaToken(user);
+            log.info("2FA required for userId: {} - MFA token issued", user.getId());
+            return new MfaRequiredResponse(true, mfaToken);
+        }
 
         String accessToken = jwtUtil.generateToken(user);
         String refreshToken = createRefreshToken(user.getId());
