@@ -43,4 +43,12 @@ public class AuthController {
         log.info("POST /api/auth/refresh - Token refreshed successfully");
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        log.info("POST /api/auth/logout - Logout request received");
+        authService.logout(request);
+        log.info("POST /api/auth/logout - Logout successful");
+        return ResponseEntity.noContent().build();
+    }
 }
