@@ -36,4 +36,13 @@ public class WatchlistController {
         log.info("POST /api/users/profile/watchlist - Adding movieId: {} for userId: {}", request.movieId(), userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(watchlistService.addMovie(userId, request));
     }
+
+    @DeleteMapping("/{movieId}")
+    public ResponseEntity<Void> removeMovie(@PathVariable UUID movieId,
+                                            Authentication authentication) {
+        UUID userId = UUID.fromString((String) authentication.getPrincipal());
+        log.info("DELETE /api/users/profile/watchlist/{} - Request for userId: {}", movieId, userId);
+        watchlistService.removeMovie(userId, movieId);
+        return ResponseEntity.noContent().build();
+    }
 }
