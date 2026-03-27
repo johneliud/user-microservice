@@ -28,4 +28,12 @@ public class WatchlistController {
         log.info("GET /api/users/profile/watchlist - Request for userId: {}", userId);
         return ResponseEntity.ok(watchlistService.getWatchlist(userId));
     }
+
+    @PostMapping
+    public ResponseEntity<WatchlistItemResponse> addMovie(@Valid @RequestBody WatchlistRequest request,
+                                                          Authentication authentication) {
+        UUID userId = UUID.fromString((String) authentication.getPrincipal());
+        log.info("POST /api/users/profile/watchlist - Adding movieId: {} for userId: {}", request.movieId(), userId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(watchlistService.addMovie(userId, request));
+    }
 }
