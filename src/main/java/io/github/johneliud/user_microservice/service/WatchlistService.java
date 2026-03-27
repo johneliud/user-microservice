@@ -1,5 +1,6 @@
 package io.github.johneliud.user_microservice.service;
 
+import io.github.johneliud.user_microservice.client.MovieServiceClient;
 import io.github.johneliud.user_microservice.dto.WatchlistItemResponse;
 import io.github.johneliud.user_microservice.dto.WatchlistRequest;
 import io.github.johneliud.user_microservice.entity.Watchlist;
@@ -18,6 +19,7 @@ import java.util.UUID;
 public class WatchlistService {
 
     private final WatchlistRepository watchlistRepository;
+    private final MovieServiceClient movieServiceClient;
 
     public List<WatchlistItemResponse> getWatchlist(UUID userId) {
         log.debug("Fetching watchlist for userId: {}", userId);
@@ -30,7 +32,11 @@ public class WatchlistService {
     public WatchlistItemResponse addMovie(UUID userId, WatchlistRequest request) {
         log.debug("Adding movieId: {} to watchlist for userId: {}", request.movieId(), userId);
 
-        // TODO: validate movieId exists by calling movie-service once it is available
+        if (!movieServiceClient.movieExists(request.movieId().toString())) {
+            log.warn("Movie not found in movie-service - movieId: {}", request.movieId());
+            throw new IllegalArgumentException("Movie not found with id: " + request.movieId());
+        }
+
         if (watchlistRepository.existsByUserIdAndMovieId(userId, request.movieId())) {
             log.warn("Movie already in watchlist - userId: {}, movieId: {}", userId, request.movieId());
             throw new IllegalArgumentException("Movie is already in your watchlist");
