@@ -45,4 +45,17 @@ public class WatchlistService {
         log.info("Movie added to watchlist - userId: {}, movieId: {}", userId, request.movieId());
         return new WatchlistItemResponse(saved.getMovieId(), saved.getAddedAt());
     }
+
+    @Transactional
+    public void removeMovie(UUID userId, UUID movieId) {
+        log.debug("Removing movieId: {} from watchlist for userId: {}", movieId, userId);
+
+        if (!watchlistRepository.existsByUserIdAndMovieId(userId, movieId)) {
+            log.warn("Movie not in watchlist - userId: {}, movieId: {}", userId, movieId);
+            throw new IllegalArgumentException("Movie is not in your watchlist");
+        }
+
+        watchlistRepository.deleteByUserIdAndMovieId(userId, movieId);
+        log.info("Movie removed from watchlist - userId: {}, movieId: {}", userId, movieId);
+    }
 }
