@@ -33,7 +33,7 @@ public class TwoFactorAuthController {
     @Value("${jwt.refresh-expiration}")
     private long refreshExpiration;
 
-    @Value("${cookie.secure:false}")
+    @Value("${cookie.secure}")
     private boolean cookieSecure;
 
     @PostMapping("/setup")
