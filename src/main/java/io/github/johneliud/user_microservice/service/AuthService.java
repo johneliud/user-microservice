@@ -4,7 +4,6 @@ import io.github.johneliud.user_microservice.dto.AuthResponse;
 import io.github.johneliud.user_microservice.dto.LoginRequest;
 import io.github.johneliud.user_microservice.dto.LoginResponse;
 import io.github.johneliud.user_microservice.dto.MfaRequiredResponse;
-import io.github.johneliud.user_microservice.dto.RefreshTokenRequest;
 import io.github.johneliud.user_microservice.dto.RegisterRequest;
 import io.github.johneliud.user_microservice.entity.RefreshToken;
 import io.github.johneliud.user_microservice.entity.Role;
@@ -94,10 +93,10 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse refresh(RefreshTokenRequest request) {
+    public AuthResponse refresh(String refreshToken) {
         log.debug("Processing refresh token rotation");
 
-        RefreshToken stored = refreshTokenRepository.findByToken(request.refreshToken())
+        RefreshToken stored = refreshTokenRepository.findByToken(refreshToken)
                 .orElseThrow(() -> {
                     log.warn("Refresh failed - token not found");
                     return new IllegalArgumentException("Invalid refresh token");
@@ -127,10 +126,10 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(RefreshTokenRequest request) {
+    public void logout(String refreshToken) {
         log.debug("Processing logout - revoking refresh token");
 
-        refreshTokenRepository.findByToken(request.refreshToken())
+        refreshTokenRepository.findByToken(refreshToken)
                 .ifPresentOrElse(
                         rt -> {
                             rt.setRevoked(true);
