@@ -1,6 +1,10 @@
 package io.github.johneliud.user_microservice.service;
 
-import io.github.johneliud.user_microservice.dto.*;
+import io.github.johneliud.user_microservice.dto.AuthResponse;
+import io.github.johneliud.user_microservice.dto.LoginRequest;
+import io.github.johneliud.user_microservice.dto.LoginResponse;
+import io.github.johneliud.user_microservice.dto.MfaRequiredResponse;
+import io.github.johneliud.user_microservice.dto.RegisterRequest;
 import io.github.johneliud.user_microservice.entity.RefreshToken;
 import io.github.johneliud.user_microservice.entity.Role;
 import io.github.johneliud.user_microservice.entity.User;
@@ -170,7 +174,7 @@ class AuthServiceTest {
         when(jwtUtil.getExpiration()).thenReturn(86400000L);
         when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        AuthResponse response = authService.refresh(new RefreshTokenRequest("refresh-token"));
+        AuthResponse response = authService.refresh("refresh-token");
 
         assertEquals("new-access-token", response.accessToken());
         assertTrue(stored.isRevoked());
@@ -182,7 +186,7 @@ class AuthServiceTest {
         when(refreshTokenRepository.findByToken("refresh-token")).thenReturn(Optional.of(stored));
 
         assertThrows(IllegalArgumentException.class,
-                () -> authService.refresh(new RefreshTokenRequest("refresh-token")));
+                () -> authService.refresh("refresh-token"));
     }
 
     @Test
@@ -191,7 +195,7 @@ class AuthServiceTest {
         when(refreshTokenRepository.findByToken("refresh-token")).thenReturn(Optional.of(stored));
 
         assertThrows(IllegalArgumentException.class,
-                () -> authService.refresh(new RefreshTokenRequest("refresh-token")));
+                () -> authService.refresh("refresh-token"));
     }
 
     @Test
@@ -199,7 +203,7 @@ class AuthServiceTest {
         when(refreshTokenRepository.findByToken("bad-token")).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class,
-                () -> authService.refresh(new RefreshTokenRequest("bad-token")));
+                () -> authService.refresh("bad-token"));
     }
 
     // ── logout ────────────────────────────────────────────────────────────────
@@ -210,7 +214,7 @@ class AuthServiceTest {
         when(refreshTokenRepository.findByToken("refresh-token")).thenReturn(Optional.of(stored));
         when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        authService.logout(new RefreshTokenRequest("refresh-token"));
+        authService.logout("refresh-token");
 
         assertTrue(stored.isRevoked());
         verify(refreshTokenRepository).save(stored);
@@ -220,7 +224,7 @@ class AuthServiceTest {
     void logout_unknownToken_noExceptionThrown() {
         when(refreshTokenRepository.findByToken("unknown")).thenReturn(Optional.empty());
 
-        assertDoesNotThrow(() -> authService.logout(new RefreshTokenRequest("unknown")));
+        assertDoesNotThrow(() -> authService.logout("unknown"));
         verify(refreshTokenRepository, never()).save(any());
     }
 }
