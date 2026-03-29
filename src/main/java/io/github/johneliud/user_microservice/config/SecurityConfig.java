@@ -36,8 +36,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/register", "/api/auth/login",
                                          "/api/auth/refresh", "/api/auth/logout",
                                          "/api/auth/2fa/authenticate").permitAll()
-                        .requestMatchers("/api/users").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/api/users/{id}").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/users/profile", "/api/users/profile/**",
+                                         "/api/auth/2fa/setup", "/api/auth/2fa/verify",
+                                         "/api/auth/2fa/disable").authenticated()
+                        .requestMatchers("/api/users", "/api/users/{id}").hasAuthority("ROLE_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
