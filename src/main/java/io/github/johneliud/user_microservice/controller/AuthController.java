@@ -3,7 +3,6 @@ package io.github.johneliud.user_microservice.controller;
 import io.github.johneliud.user_microservice.dto.AccessTokenResponse;
 import io.github.johneliud.user_microservice.dto.AuthResponse;
 import io.github.johneliud.user_microservice.dto.LoginRequest;
-import io.github.johneliud.user_microservice.dto.RefreshTokenRequest;
 import io.github.johneliud.user_microservice.dto.RegisterRequest;
 import io.github.johneliud.user_microservice.service.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -66,7 +65,7 @@ public class AuthController {
         if (refreshToken == null || refreshToken.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        AuthResponse auth = authService.refresh(new RefreshTokenRequest(refreshToken));
+        AuthResponse auth = authService.refresh(refreshToken);
         setRefreshCookie(response, auth.refreshToken());
         log.info("POST /api/auth/refresh - Token refreshed successfully");
         return ResponseEntity.ok(AccessTokenResponse.of(auth.accessToken(), auth.expiresIn()));
@@ -78,7 +77,7 @@ public class AuthController {
             HttpServletResponse response) {
         log.info("POST /api/auth/logout - Logout request received");
         if (refreshToken != null && !refreshToken.isBlank()) {
-            authService.logout(new RefreshTokenRequest(refreshToken));
+            authService.logout(refreshToken);
         }
         clearRefreshCookie(response);
         log.info("POST /api/auth/logout - Logout successful");
